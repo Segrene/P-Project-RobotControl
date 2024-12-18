@@ -108,13 +108,23 @@ void CRD::Clear() {
 	Set = false;
 }
 void CRD::makeLifting() {
-	if (Point < 1) { cout << "ÁÂÇ¥¼ö ºÎÁ·" << endl; }
+	if (Point < 1) { cout << "ÁÂÇ¥¼ö ºÎÁ·" << endl; return; }
 	array<double, 6> lift1 = Coord[Point];
 	array<double, 6> lift2 = Coord[0];
 	lift1[2] += 30;
 	lift2[2] += 30;
 	this->addPoint(lift1);
 	this->addPoint(lift2);
+}
+void CRD::makeInterval() {
+	if (Point >= 1) { cout << "´ÜÀÏ ÁÂÇ¥ ¾Æ´Ô" << endl; return; }
+	array<double, 6> Inter1 = Coord[Point];
+	array<double, 6> Inter2 = Coord[Point];
+	Inter1[1] -= 20;
+	Inter2[1] += 20;
+	this->Clear();
+	this->setOrigin(Inter1);
+	this->addPoint(Inter2);
 }
 int CRD::validation() {
 	if (this->isSet() == false) {

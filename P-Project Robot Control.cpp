@@ -77,6 +77,7 @@ int main()
 	Sleep(1000);
 
 	CRD Coord;
+	CRD& Crd1 = Coord;
 	Coord.Clear();
 	bool CoordSet = false;
 
@@ -91,10 +92,10 @@ int main()
 		cout << "로봇 원점 : " << RobotOrigin << endl;
 		if (CoordSet == false) { cout << "좌표 설정되지 않음" << endl; } //좌표가 설정되지 않을 경우 작동 거부
 		switch (Menu(CoordSet)) { //메뉴 선택
-		case 0: SetCRD(Coord); continue;
-		case 1: if (CoordSet) { GetCRD(Coord); } continue;
-		case 2: if (CoordSet) { state = AutoMode(SCKT, Coord, RobotOrigin); } continue;
-		case 3: if (CoordSet) { state = HoldMode(SCKT, Coord, RobotOrigin); } continue;
+		case 0: SetCRD(Crd1); continue;
+		case 1: if (CoordSet) { GetCRD(Crd1); } continue;
+		case 2: if (CoordSet) { state = AutoMode(SCKT, Crd1, RobotOrigin); } continue;
+		case 3: if (CoordSet) { state = HoldMode(SCKT, Crd1, RobotOrigin); } continue;
 		case 4: EndTask(SCKT); break;
 		default: continue;
 		}
@@ -242,7 +243,12 @@ void GetCRD(CRD& Coord) {
 	inputClear();
 }
 int AutoMode(SOCKET& SCKT, CRD& Coord, string ROrigin) {
-	if (Coord.getPointCount() < 1) { cout << "좌표 부족" << endl; Sleep(1000); return 0; }
+	int Generated = 0;
+	if (Coord.getPointCount() < 1) {
+		cout << "단일 좌표 간격 자동 생성" << endl;
+		Coord.makeInterval();
+		Generated++;
+	}
 	int loop = 0;
 	cout << "루프 횟수 : ";
 	loop = GetInt();
@@ -251,17 +257,22 @@ int AutoMode(SOCKET& SCKT, CRD& Coord, string ROrigin) {
 	cin >> sl;
 	if (sl.compare("y") == 0 || sl.compare("Y") == 0) {
 		Coord.makeLifting();
+		Generated += 2;
+	}
+	for (int i = 0; i <= Coord.getPointCount(); i++) {
+		cout << Coord.getPointString(i) << endl;
 	}
 	cout << "\r" << "Loop Count : 0";
 	for (int Count = 0; Count < loop; Count++) {
 		for (int i = 0; i <= Coord.getPointCount(); i++) { //i+1개의 자표를 순회함
 			if (Move(SCKT, Coord.getPointString(i)) != 0) { return -1; }
 		}
-		cout << "\r" << "Loop Count : " << Count;
+		cout << "\r" << "Loop Count : " << Count + 1;
 	}
 	if (Move(SCKT, ROrigin) != 0) { return -1; }
-	Coord.deletePoint();
-	Coord.deletePoint();
+	for (int i = 0; i < Generated; i++) {
+		Coord.deletePoint();
+	}
 	return 0;
 }
 int HoldMode(SOCKET& SCKT, CRD& Coord, string ROrigin) {

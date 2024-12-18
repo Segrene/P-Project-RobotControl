@@ -33,5 +33,6 @@ public:
 	bool isSet();
 	void Clear();
 	void makeLifting();
+	void makeInterval();
 	int validation();
 };
