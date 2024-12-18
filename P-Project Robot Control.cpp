@@ -19,12 +19,14 @@ using namespace std;
 
 string RecvMsg(SOCKET& SCKT); //소켓(로봇) 메세지 수신
 void SendMsg(SOCKET& SCKT, string SendString); //소켓 메세지 송신
+bool SerialSend(Serial* SP, string Message);
+string SerialRecv(Serial* SP);
 string ZMQRecvMessage(zmq::socket_t& ZMQSocket); //ZMQ(카메라) 메세지 수신
 void ZMQSetCoord(CRD& Coord); //서버에서 좌표 확인
 void ManualSetCoord(CRD& Coord); //수동으로 좌표 입력(1개)
 int Move(SOCKET& SCKT, string Point); //로봇 이동
 int Verify(string String); //정상 동작 확인
-int Menu(bool isSet);
+int Menu(bool isSet, bool eFlag);
 int GetInt(); //정수 입력
 void SetCRD(CRD& Coord);
 void GetCRD(CRD& Coord);
@@ -63,14 +65,14 @@ int main()
 	SOCKET& SCKT = hClient;
 
 	//시리얼 구성 시작
+	bool eFlag = false;
 	Serial* SP = new Serial("\\\\.\\com3"); //1:잡기, 2:놓기, 3:분사1, 4:분사2
 	if (SP->IsConnected()) {
 		cout << "엔드 이펙터 연결됨" << endl;
+		eFlag = true;
 	}
 	else {
 		cout << "엔드 이펙터 연결되지 않음" << endl;
-		Sleep(1000);
-		return 0;
 	}
 
 	int state = 0; // -1 : 강제종료, 0 : 정상종료, 1 : 특수상황
@@ -113,14 +115,15 @@ int main()
 		cout << "작동 모드 : " << RobotMode;
 		cout << "로봇 원점 : " << RobotOrigin << endl;
 		if (CoordSet == false) { cout << "좌표 설정되지 않음" << endl; } //좌표가 설정되지 않을 경우 작동 거부
-		switch (Menu(CoordSet)) { //메뉴 선택
+		if (eFlag == false) { cout << "엔드이펙터 연결되지 않음" << endl; }
+		switch (Menu(CoordSet, eFlag)) { //메뉴 선택
 		case 0: SetCRD(Crd1); continue;
 		case 1: if (CoordSet) { GetCRD(Crd1); } continue;
 		case 2: if (CoordSet) { state = AutoMode(SCKT, Crd1, RobotOrigin); } continue;
 		case 3: if (CoordSet) { state = HoldMode(SCKT, Crd1, RobotOrigin); } continue;
-		case 4: if (CoordSet) { state = GrabMode(SCKT, SP, RobotOrigin, GCRD); } continue;
-		case 5: if (CoordSet) { state = ThrowMode(SCKT, SP, RobotOrigin, TCRD); } continue;
-		case 6: if (CoordSet) { state = ScenarioMode(SCKT, SP, Crd1, RobotOrigin, GCRD, TCRD); } continue;
+		case 4: if (eFlag) { state = GrabMode(SCKT, SP, RobotOrigin, GCRD); } continue;
+		case 5: if (eFlag) { state = ThrowMode(SCKT, SP, RobotOrigin, TCRD); } continue;
+		case 6: if (CoordSet == true && eFlag == true) { state = ScenarioMode(SCKT, SP, Crd1, RobotOrigin, GCRD, TCRD); } continue;
 		case 7: EndTask(SCKT); break;
 		default: continue;
 		}
@@ -145,6 +148,19 @@ string RecvMsg(SOCKET & SCKT) {
 }
 void SendMsg(SOCKET& SCKT, string SendString) {
 	send(SCKT, SendString.c_str(), strlen(SendString.c_str()), 0);
+}
+bool SerialSend(Serial* SP, string Message) {
+	char sMsg[255] = "";
+	strcpy(sMsg, Message.c_str());
+	return SP->WriteData(sMsg, 255);
+}
+string SerialRecv(Serial* SP) {
+	char incomingData[255] = "";
+	int readResult = 0;
+	readResult = SP->ReadData(incomingData, 256);
+	incomingData[readResult] = 0;
+	string SerialMessage(incomingData);
+	return SerialMessage;
 }
 string ZMQRecvMessage(zmq::socket_t& ZMQSocket) {
 	cout << "RequestMessage" << endl;
@@ -212,12 +228,18 @@ int Verify(string String) {
 		return 1;
 	}
 }
-int Menu(bool isSet) {
+int Menu(bool isSet, bool eFlag) {
 	cout << "동작 선택" << endl;
 	cout << "0. 좌표 설정" << endl;
 	if (isSet == true) {
 		cout << "1. 좌표 확인" << endl << "2. 자동 모드" << endl << "3. 대기 모드" << endl;
 		cout << "4. 도구 잡기" << endl << "5. 도구 놓기" << endl << "6. 시나리오 모드" << endl;
+	}
+	if (eFlag == true) {
+		cout << "4. 도구 잡기" << endl << "5. 도구 놓기" << endl;
+	}
+	if (isSet == true && eFlag == true) {
+		cout << "6. 시나리오 모드" << endl;
 	}
 	cout << "7. 종료" << endl << "Select : ";
 	int m = GetInt();
@@ -314,23 +336,27 @@ int HoldMode(SOCKET& SCKT, CRD& Coord, string ROrigin) {
 	return 0;
 }
 int GrabMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD) {
-	char incomingData[255] = "";
-	int readResult = 0;
-	SP->WriteData("1\r\n", 255);
-	readResult = SP->ReadData(incomingData, 256);
-	incomingData[readResult] = 0;
-	string SerialMessage(incomingData);
-	cout << SerialMessage << endl;
+	string status;
+	if (SerialSend(SP, "1\n")) {
+		status = SerialRecv(SP);
+		cout << status << endl;
+	}
+	else {
+		cout << "엔드이펙터 통신 실패" << endl;
+		return -1;
+	}
 	return 0;
 }
 int ThrowMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD) {
-	char incomingData[255] = "";
-	int readResult = 0;
-	SP->WriteData("2\r\n", 255);
-	readResult = SP->ReadData(incomingData, 256);
-	incomingData[readResult] = 0;
-	string SerialMessage(incomingData);
-	cout << SerialMessage << endl;
+	string status;
+	if (SerialSend(SP, "2\n")) {
+		status = SerialRecv(SP);
+		cout << status << endl;
+	}
+	else {
+		cout << "엔드이펙터 통신 실패" << endl;
+		return -1;
+	}
 	return 0;
 }
 int ScenarioMode(SOCKET& SCKT, Serial* SP, CRD& Coord, string ROrigin, CRD& GCRD, CRD& TCRD) {
