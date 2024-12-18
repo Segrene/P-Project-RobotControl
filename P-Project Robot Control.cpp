@@ -24,13 +24,15 @@ void ZMQSetCoord(CRD& Coord); //서버에서 좌표 확인
 void ManualSetCoord(CRD& Coord); //수동으로 좌표 입력(1개)
 int Move(SOCKET& SCKT, string Point); //로봇 이동
 int Verify(string String); //정상 동작 확인
-int Menu();
+int Menu(bool isSet);
 int GetInt(); //정수 입력
 void SetCRD(CRD& Coord);
 void GetCRD(CRD& Coord);
 int AutoMode(SOCKET& SCKT, CRD& Coord, string ROrigin);
 int HoldMode(SOCKET& SCKT, CRD& Coord, string ROrigin);
 void EndTask(SOCKET& SCKT);
+int getCommand();
+void inputClear();
 
 int main()
 {
@@ -73,21 +75,23 @@ int main()
 
 	CRD Coord;
 	Coord.Clear();
+	bool CoordSet = false;
 
 	while (true) {
 		if (state != 0) {
 			cout << "이상 실행 감지됨" << endl;
 			break;
 		}
+		CoordSet = Coord.isSet();
 		system("cls");
 		cout << "작동 모드 : " << RobotMode;
 		cout << "로봇 원점 : " << RobotOrigin << endl;
-		if (Coord.isSet() == false) { cout << "좌표 설정되지 않음" << endl; } //좌표가 설정되지 않을 경우 작동 거부
-		switch (Menu()) { //메뉴 선택
+		if (CoordSet == false) { cout << "좌표 설정되지 않음" << endl; } //좌표가 설정되지 않을 경우 작동 거부
+		switch (Menu(CoordSet)) { //메뉴 선택
 		case 0: SetCRD(Coord); continue;
-		case 1: GetCRD(Coord); continue;
-		case 2: if (Coord.isSet()) { state = AutoMode(SCKT, Coord, RobotOrigin); } continue;
-		case 3: if (Coord.isSet()) { state = HoldMode(SCKT, Coord, RobotOrigin); } continue;
+		case 1: if (CoordSet) { GetCRD(Coord); } continue;
+		case 2: if (CoordSet) { state = AutoMode(SCKT, Coord, RobotOrigin); } continue;
+		case 3: if (CoordSet) { state = HoldMode(SCKT, Coord, RobotOrigin); } continue;
 		case 4: EndTask(SCKT); break;
 		default: continue;
 		}
@@ -178,9 +182,13 @@ int Verify(string String) {
 		return 1;
 	}
 }
-int Menu() {
+int Menu(bool isSet) {
 	cout << "동작 선택" << endl;
-	cout << "0. 좌표 설정" << endl << "1. 좌표 확인" << endl << "2. 자동 모드" << endl << "3. 대기 모드" << endl << "4. 종료" << endl << "Select : ";
+	cout << "0. 좌표 설정" << endl;
+	if (isSet == true) {
+		cout << "1. 좌표 확인" << endl << "2. 자동 모드" << endl << "3. 대기 모드" << endl;
+	}
+	cout << "4. 종료" << endl << "Select : ";
 	return GetInt();
 }
 int GetInt() {
@@ -189,8 +197,7 @@ int GetInt() {
 		cin >> i;
 		if (!cin) {
 			cout << "비정상 입력" << endl;
-			cin.clear();
-			cin.ignore(INT_MAX, '\n');
+			inputClear();
 		}
 		else {
 			return i;
@@ -208,12 +215,20 @@ void SetCRD(CRD& Coord) {
 	if (Coord.validation() == -1) {
 		cout << "비정상 좌표 확인" << endl;
 		Coord.Clear();
+		while (getCommand() != -1) {
+			Sleep(100);
+		}
+		inputClear();
 	}
 }
 void GetCRD(CRD& Coord) {
 	for (int i = 0; i <= Coord.getPointCount(); i++) {
 		cout << "좌표 " << i + 1 << " : " << Coord.getPointString(i) << endl;
 	}
+	while (getCommand() != -1) {
+		Sleep(100);
+	}
+	inputClear();
 }
 int AutoMode(SOCKET& SCKT, CRD& Coord, string ROrigin) {
 	int loop = 0;
@@ -250,4 +265,14 @@ int HoldMode(SOCKET& SCKT, CRD& Coord, string ROrigin) {
 }
 void EndTask(SOCKET& SCKT) {
 	SendMsg(SCKT, "end");
+}
+int getCommand() { //실시간으로 키 입력을 받는 함수
+	if (_kbhit()) {
+		return _getch();
+	}
+	return -1;
+}
+void inputClear() {
+	cin.clear();
+	cin.ignore(INT_MAX, '\n');
 }
