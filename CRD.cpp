@@ -131,7 +131,6 @@ int CRD::validation() {
 		cout << "ÁÂÇ¥ ¾øÀ½" << endl;
 		return 1;
 	}
-	array<double, 6> check;
 	for (int i = 0; i <= Point; i++) {
 		if (Coord[i][0] < 280 || Coord[i][0] > 580) { return -1; }
 		if (Coord[i][1] < -150 || Coord[i][1] > 150) { return -1; }

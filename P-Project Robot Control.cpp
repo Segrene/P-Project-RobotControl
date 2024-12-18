@@ -30,6 +30,9 @@ void SetCRD(CRD& Coord);
 void GetCRD(CRD& Coord);
 int AutoMode(SOCKET& SCKT, CRD& Coord, string ROrigin);
 int HoldMode(SOCKET& SCKT, CRD& Coord, string ROrigin);
+int GrabMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD);
+int ThrowMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD);
+int ScenarioMode(SOCKET& SCKT, Serial* SP, CRD& Coord, string ROrigin, CRD& GCRD, CRD& TCRD);
 void EndTask(SOCKET& SCKT);
 int getCommand();
 void inputClear();
@@ -59,11 +62,23 @@ int main()
 	SOCKET hClient = accept(hListen, (SOCKADDR*)&tCIntAddr, &iCIntSize);
 	SOCKET& SCKT = hClient;
 
+	//시리얼 구성 시작
+	Serial* SP = new Serial("\\\\.\\com3"); //1:잡기, 2:놓기, 3:분사1, 4:분사2
+	if (SP->IsConnected()) {
+		cout << "엔드 이펙터 연결됨" << endl;
+	}
+	else {
+		cout << "엔드 이펙터 연결되지 않음" << endl;
+		Sleep(1000);
+		return 0;
+	}
+
 	int state = 0; // -1 : 강제종료, 0 : 정상종료, 1 : 특수상황
 	string RobotMode = "";
 	string RobotOrigin = "";
 
 	cout << "M0609 : " << RecvMsg(SCKT); //연결 상황 확인용
+	SendMsg(SCKT, "wait"); //로봇 통신 동기화용 메세지
 	RobotMode = RecvMsg(SCKT);
 	if (RobotMode.compare("BaseABS\r\n") == 0) {
 		RobotOrigin = "367,6,278,0,180,0";
@@ -81,6 +96,13 @@ int main()
 	Coord.Clear();
 	bool CoordSet = false;
 
+	CRD GrabCRD;
+	CRD& GCRD = GrabCRD;
+	GrabCRD.Clear();
+	CRD TrashCRD;
+	CRD& TCRD = TrashCRD;
+	TrashCRD.Clear();
+
 	while (true) {
 		if (state != 0) {
 			cout << "이상 실행 감지됨" << endl;
@@ -96,7 +118,10 @@ int main()
 		case 1: if (CoordSet) { GetCRD(Crd1); } continue;
 		case 2: if (CoordSet) { state = AutoMode(SCKT, Crd1, RobotOrigin); } continue;
 		case 3: if (CoordSet) { state = HoldMode(SCKT, Crd1, RobotOrigin); } continue;
-		case 4: EndTask(SCKT); break;
+		case 4: if (CoordSet) { state = GrabMode(SCKT, SP, RobotOrigin, GCRD); } continue;
+		case 5: if (CoordSet) { state = ThrowMode(SCKT, SP, RobotOrigin, TCRD); } continue;
+		case 6: if (CoordSet) { state = ScenarioMode(SCKT, SP, Crd1, RobotOrigin, GCRD, TCRD); } continue;
+		case 7: EndTask(SCKT); break;
 		default: continue;
 		}
 		break;
@@ -106,6 +131,7 @@ int main()
 	closesocket(hClient);
 	closesocket(hListen);
 	WSACleanup();
+	SP->~Serial();
 	return 0;
 }
 
@@ -191,8 +217,9 @@ int Menu(bool isSet) {
 	cout << "0. 좌표 설정" << endl;
 	if (isSet == true) {
 		cout << "1. 좌표 확인" << endl << "2. 자동 모드" << endl << "3. 대기 모드" << endl;
+		cout << "4. 도구 잡기" << endl << "5. 도구 놓기" << endl << "6. 시나리오 모드" << endl;
 	}
-	cout << "4. 종료" << endl << "Select : ";
+	cout << "7. 종료" << endl << "Select : ";
 	int m = GetInt();
 	inputClear();
 	return m;
@@ -219,7 +246,7 @@ void SetCRD(CRD& Coord) {
 	default: ManualSetCoord(Coord); break;
 	}
 	if (Coord.validation() == -1) {
-		cout << "비정상 좌표 확인" << endl;
+		cout << "비정상 좌표 확인, 좌표 삭제" << endl;
 		Coord.Clear();
 		while (true) {
 			if (getCommand() != -1) {
@@ -284,6 +311,31 @@ int HoldMode(SOCKET& SCKT, CRD& Coord, string ROrigin) {
 	if (Move(SCKT, Coord.getPointString(0)) != 0) { return -1; }
 	Sleep(HoldTime);
 	if (Move(SCKT, ROrigin) != 0) { return -1; }
+	return 0;
+}
+int GrabMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD) {
+	char incomingData[255] = "";
+	int readResult = 0;
+	SP->WriteData("1\r\n", 255);
+	readResult = SP->ReadData(incomingData, 256);
+	incomingData[readResult] = 0;
+	string SerialMessage(incomingData);
+	cout << SerialMessage << endl;
+	return 0;
+}
+int ThrowMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD) {
+	char incomingData[255] = "";
+	int readResult = 0;
+	SP->WriteData("2\r\n", 255);
+	readResult = SP->ReadData(incomingData, 256);
+	incomingData[readResult] = 0;
+	string SerialMessage(incomingData);
+	cout << SerialMessage << endl;
+	return 0;
+}
+int ScenarioMode(SOCKET& SCKT, Serial* SP, CRD& Coord, string ROrigin, CRD& GCRD, CRD& TCRD) {
+	SP->WriteData("1\r\n", 255);
+	SP->WriteData("2\r\n", 255);
 	return 0;
 }
 void EndTask(SOCKET& SCKT) {
