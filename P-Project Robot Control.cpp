@@ -36,6 +36,7 @@ void inputClear();
 
 int main()
 {
+	cout << "Robot Control" << endl;
 	WSADATA wsadata;
 	if (WSAStartup(MAKEWORD(2, 2), &wsadata) != 0) {
 		cout << "WSAStartup failed" << endl;
@@ -73,6 +74,8 @@ int main()
 	cout << "RobotMode : " << RobotMode;
 	cout << "RobotOrigin : " << RobotOrigin;
 
+	Sleep(1000);
+
 	CRD Coord;
 	Coord.Clear();
 	bool CoordSet = false;
@@ -97,7 +100,7 @@ int main()
 		}
 		break;
 	}
-	cout << "RecvMsg" << RecvMsg(SCKT); //종료 메세지
+	cout << "RecvMsg : " << RecvMsg(SCKT); //종료 메세지
 
 	closesocket(hClient);
 	closesocket(hListen);
@@ -189,13 +192,15 @@ int Menu(bool isSet) {
 		cout << "1. 좌표 확인" << endl << "2. 자동 모드" << endl << "3. 대기 모드" << endl;
 	}
 	cout << "4. 종료" << endl << "Select : ";
-	return GetInt();
+	int m = GetInt();
+	inputClear();
+	return m;
 }
 int GetInt() {
 	int i;
 	while (true) {
 		cin >> i;
-		if (!cin) {
+		if (cin.fail() == 1) {
 			cout << "비정상 입력" << endl;
 			inputClear();
 		}
@@ -215,7 +220,10 @@ void SetCRD(CRD& Coord) {
 	if (Coord.validation() == -1) {
 		cout << "비정상 좌표 확인" << endl;
 		Coord.Clear();
-		while (getCommand() != -1) {
+		while (true) {
+			if (getCommand() != -1) {
+				break;
+			}
 			Sleep(100);
 		}
 		inputClear();
@@ -225,17 +233,19 @@ void GetCRD(CRD& Coord) {
 	for (int i = 0; i <= Coord.getPointCount(); i++) {
 		cout << "좌표 " << i + 1 << " : " << Coord.getPointString(i) << endl;
 	}
-	while (getCommand() != -1) {
+	while (true) {
+		if (getCommand() != -1) {
+			break;
+		}
 		Sleep(100);
 	}
 	inputClear();
 }
 int AutoMode(SOCKET& SCKT, CRD& Coord, string ROrigin) {
+	if (Coord.getPointCount() < 1) { cout << "좌표 부족" << endl; Sleep(1000); return 0; }
 	int loop = 0;
-	while (loop > 0) {
-		cout << "루프 횟수 : ";
-		loop = GetInt();
-	}
+	cout << "루프 횟수 : ";
+	loop = GetInt();
 	string sl;
 	cout << "들어올리기(y/n) : ";
 	cin >> sl;
@@ -250,6 +260,8 @@ int AutoMode(SOCKET& SCKT, CRD& Coord, string ROrigin) {
 		cout << "\r" << "Loop Count : " << Count;
 	}
 	if (Move(SCKT, ROrigin) != 0) { return -1; }
+	Coord.deletePoint();
+	Coord.deletePoint();
 	return 0;
 }
 int HoldMode(SOCKET& SCKT, CRD& Coord, string ROrigin) {

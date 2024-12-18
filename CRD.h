@@ -26,6 +26,7 @@ public:
 	void setOrigin(array<double, 6> coord);
 	void addPoint(array<double, 6> coord);
 	void editPoint(int pointNum, int coordNum, double coord);
+	int deletePoint();
 	string getPointString(int point);
 	void getPoint(int point, double* coord);
 	int getPointCount();

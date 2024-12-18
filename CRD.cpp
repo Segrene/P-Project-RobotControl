@@ -72,6 +72,12 @@ void CRD::editPoint(int pointNum, int coordNum, double coord) {
 	if (pointNum > Point) { throw out_of_range("vector 범위 초과"); }
 	Coord[pointNum][coordNum] = coord;
 }
+int CRD::deletePoint() {
+	if (Point < 1) { return -1; }
+	Coord.pop_back();
+	Point--;
+	return 0;
+}
 string CRD::getPointString(int point) {
 	if (point > Point) { throw out_of_range("vector 범위 초과"); }
 	string coordString;
@@ -109,7 +115,6 @@ void CRD::makeLifting() {
 	lift2[2] += 30;
 	this->addPoint(lift1);
 	this->addPoint(lift2);
-	Point += 2;
 }
 int CRD::validation() {
 	if (this->isSet() == false) {
