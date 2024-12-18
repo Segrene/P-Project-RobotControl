@@ -1,26 +1,26 @@
 #include "CRD.h"
 
-CRD::CRD(double x, double y, double z, double rx, double ry, double rz) { Coord[0] = { x,y,z,rx,ry,rz }; Point = 0; Init = true; }
+CRD::CRD(double x, double y, double z, double rx, double ry, double rz) { Coord[0] = { x,y,z,rx,ry,rz }; Point = 0; Set = true; }
 CRD::CRD(double coord[]) {
 	for (int i = 0; i < 6; i++) {
 		Coord[0][i] = coord[i];
 	}
 	Point = 0;
-	Init = true;
+	Set = true;
 }
 CRD::CRD(array<double, 6> coord) {
 	Coord[0] = coord;
 	Point = 0;
-	Init = true;
+	Set = true;
 }
 
-void CRD::setOrigin(double x, double y, double z, double rx, double ry, double rz) { Coord[0] = { x,y,z,rx,ry,rz }; Init = true; }
+void CRD::setOrigin(double x, double y, double z, double rx, double ry, double rz) { Coord[0] = { x,y,z,rx,ry,rz }; Set = true; }
 void CRD::addPoint(double x, double y, double z, double rx, double ry, double rz) { Coord.push_back({ x,y,z,rx,ry,rz }); Point++; }
 void CRD::setOrigin(double coord[6]) {
 	for (int i = 0; i < 6; i++) {
 		Coord[0][i] = coord[i];
 	}
-	Init = true;
+	Set = true;
 }
 void CRD::addPoint(double coord[6]) {
 	array<double, 6> addPoint = { 0 };
@@ -42,7 +42,7 @@ void CRD::setOrigin(string coord) {
 	for (int j = 0; j < 6; j++) {
 		Coord[0][j] = stod(coordString[j]);
 	}
-	Init = true;
+	Set = true;
 }
 void CRD::addPoint(string coord) {
 	array<double, 6> addPoint = { 0 };
@@ -62,7 +62,7 @@ void CRD::addPoint(string coord) {
 }
 void CRD::setOrigin(array<double, 6> coord) {
 	Coord[0] = coord;
-	Init = true;
+	Set = true;
 }
 void CRD::addPoint(array<double, 6> coord) {
 	Coord.push_back(coord);
@@ -93,13 +93,13 @@ int CRD::getPointCount() {
 	return Point;
 }
 bool CRD::isSet() {
-	return Init;
+	return Set;
 }
 void CRD::Clear() {
 	Coord.clear();
 	Coord.push_back({ 0,0,0,0,0,0 });
 	Point = 0;
-	Init = false;
+	Set = false;
 }
 void CRD::makeLifting() {
 	if (Point < 1) { cout << "ÁÂÇ¥¼ö ºÎÁ·" << endl; }
@@ -110,4 +110,17 @@ void CRD::makeLifting() {
 	this->addPoint(lift1);
 	this->addPoint(lift2);
 	Point += 2;
+}
+int CRD::validation() {
+	if (this->isSet() == false) {
+		cout << "ÁÂÇ¥ ¾øÀ½" << endl;
+		return 1;
+	}
+	array<double, 6> check;
+	for (int i = 0; i <= Point; i++) {
+		if (Coord[i][0] < 280 || Coord[i][0] > 580) { return -1; }
+		if (Coord[i][1] < -150 || Coord[i][1] > 150) { return -1; }
+		if (Coord[i][2] < 50 || Coord[i][2] > 300) { return -1; }
+	}
+	return 0;
 }

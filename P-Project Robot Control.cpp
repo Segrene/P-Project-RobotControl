@@ -205,6 +205,10 @@ void SetCRD(CRD& Coord) {
 	case 1: ManualSetCoord(Coord); break;
 	default: ManualSetCoord(Coord); break;
 	}
+	if (Coord.validation() == -1) {
+		cout << "비정상 좌표 확인" << endl;
+		Coord.Clear();
+	}
 }
 void GetCRD(CRD& Coord) {
 	for (int i = 0; i <= Coord.getPointCount(); i++) {

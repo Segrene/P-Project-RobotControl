@@ -9,7 +9,7 @@ using namespace std;
 
 class CRD {
 private:
-	bool Init = false;
+	bool Set = false;
 	int Point = 0;
 	vector<array<double, 6>> Coord = { {0,0,0,0,0,0} };
 public:
@@ -32,4 +32,5 @@ public:
 	bool isSet();
 	void Clear();
 	void makeLifting();
+	int validation();
 };
