@@ -84,8 +84,8 @@ int main()
 		cout << "로봇 원점 : " << RobotOrigin << endl;
 		if (Coord.isSet() == false) { cout << "좌표 설정되지 않음" << endl; } //좌표가 설정되지 않을 경우 작동 거부
 		switch (Menu()) { //메뉴 선택
-		case 0: SetCRD(Coord);
-		case 1: GetCRD(Coord);
+		case 0: SetCRD(Coord); continue;
+		case 1: GetCRD(Coord); continue;
 		case 2: if (Coord.isSet()) { state = AutoMode(SCKT, Coord, RobotOrigin); } continue;
 		case 3: if (Coord.isSet()) { state = HoldMode(SCKT, Coord, RobotOrigin); } continue;
 		case 4: EndTask(SCKT); break;
