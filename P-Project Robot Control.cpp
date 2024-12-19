@@ -240,8 +240,8 @@ int Menu(bool isSet, bool eFlag) {
 	if (isSet == true) {
 		cout << "1. 좌표 확인" << endl << "2. 자동 모드" << endl << "3. 대기 모드" << endl;
 	}
-	if (isSet == true && eFlag == true) {
-		cout << "4. 도구 잡기" << endl << "5. 도구 놓기" << endl << "6. 시나리오 모드" << endl;
+	if (eFlag == true) {
+		cout << "4. 도구 잡기" << endl << "5. 도구 놓기" << endl;
 	}
 	if (isSet == true && eFlag == true) {
 		cout << "6. 시나리오 모드" << endl;
