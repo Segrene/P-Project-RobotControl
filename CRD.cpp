@@ -68,6 +68,11 @@ void CRD::addPoint(array<double, 6> coord) {
 	Coord.push_back(coord);
 	Point++;
 }
+void CRD::setVector(vector<array<double, 6>> coord) {
+	this->Clear();
+	Coord = coord;
+	Point = coord.size() - 1;
+}
 void CRD::editPoint(int pointNum, int coordNum, double coord) {
 	if (pointNum > Point) { throw out_of_range("vector 범위 초과"); }
 	Coord[pointNum][coordNum] = coord;

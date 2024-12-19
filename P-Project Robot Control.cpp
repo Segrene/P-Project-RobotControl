@@ -28,15 +28,15 @@ int Move(SOCKET& SCKT, string Point); //로봇 이동
 int Verify(string String); //정상 동작 확인
 int Menu(bool isSet, bool eFlag);
 int GetInt(); //정수 입력
-void SetCRD(CRD& Coord);
-void GetCRD(CRD& Coord);
-int AutoMode(SOCKET& SCKT, CRD& Coord, string ROrigin);
-int HoldMode(SOCKET& SCKT, CRD& Coord, string ROrigin);
-int GrabMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD);
-int ThrowMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD);
-int ScenarioMode(SOCKET& SCKT, Serial* SP, CRD& Coord, string ROrigin, CRD& GCRD, CRD& TCRD);
-void EndTask(SOCKET& SCKT);
-int getCommand();
+void SetCRD(CRD& Coord); //좌표를 설정함, 자동, 수동설정이 있음
+void GetCRD(CRD& Coord); //좌표를 확인함, 엔터를 두번 눌러 탈출 가능
+int AutoMode(SOCKET& SCKT, CRD& Coord, string ROrigin, int loopCount = 0, bool LiftFlag = false, bool ManualSelect = false); //주어진 좌표를 순회함, 기본적으로 루프 횟수 수동 설정, 들어올리지 않음, 들어올림 여부 수동 설정
+int HoldMode(SOCKET& SCKT, CRD& Coord, string ROrigin, int HoldTime = 0); //주어진 좌표에서 대기함, 기본적으로 대기시간 수동 설정
+int GrabMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD); //도구를 잡는 함수
+int ThrowMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD); //도구를 버리는 함수
+int ScenarioMode(SOCKET& SCKT, Serial* SP, CRD& Coord, string ROrigin, CRD& GCRD, CRD& TCRD); //시나리오대로 작동하는 모드, 현제로써는 1개의 시나리오만 가능
+void EndTask(SOCKET& SCKT); //로봇을 종료시키고 프로그램을 종료함
+int getCommand(); //키 입력 감지
 void inputClear();
 
 int main()
@@ -63,17 +63,20 @@ int main()
 	int iCIntSize = sizeof(tCIntAddr);
 	SOCKET hClient = accept(hListen, (SOCKADDR*)&tCIntAddr, &iCIntSize);
 	SOCKET& SCKT = hClient;
+	// 소켓 구성 종료
 
 	//시리얼 구성 시작
 	bool eFlag = false;
-	Serial* SP = new Serial("\\\\.\\com3"); //1:잡기, 2:놓기, 3:분사1, 4:분사2
+	Serial* SP = new Serial("\\\\.\\com20"); //1:잡기, 2:놓기, 3:분사1, 4:분사2
 	if (SP->IsConnected()) {
 		cout << "엔드 이펙터 연결됨" << endl;
 		eFlag = true;
 	}
 	else {
 		cout << "엔드 이펙터 연결되지 않음" << endl;
+		eFlag = false;
 	}
+	//시리얼 구성 종료
 
 	int state = 0; // -1 : 강제종료, 0 : 정상종료, 1 : 특수상황
 	string RobotMode = "";
@@ -81,7 +84,7 @@ int main()
 
 	cout << "M0609 : " << RecvMsg(SCKT); //연결 상황 확인용
 	SendMsg(SCKT, "wait"); //로봇 통신 동기화용 메세지
-	RobotMode = RecvMsg(SCKT);
+	RobotMode = RecvMsg(SCKT); //현제 로봇의 작동 상태를 확인
 	if (RobotMode.compare("BaseABS\r\n") == 0) {
 		RobotOrigin = "367,6,278,0,180,0";
 	}
@@ -100,10 +103,13 @@ int main()
 
 	CRD GrabCRD;
 	CRD& GCRD = GrabCRD;
-	GrabCRD.Clear();
-	CRD TrashCRD;
-	CRD& TCRD = TrashCRD;
-	TrashCRD.Clear();
+	vector<array<double, 6>> GCD({ {367,6,278,0,180,0}, {450, -100, 278,0,180,0}, {450, -100, 128,0,180,0}, {450, -100, 278,0,180,0},{367,6,278,0,180,0} });
+	GrabCRD.setVector(GCD);
+
+	CRD ThrowCRD;
+	CRD& TCRD = ThrowCRD;
+	vector<array<double, 6>> TCD({ {367,6,278,0,180,0}, {450, 100, 278,0,180,0}, {450, 100, 128,0,180,0}, {450, 100, 278,0,180,0},{367,6,278,0,180,0} });
+	ThrowCRD.setVector(TCD);
 
 	while (true) {
 		if (state != 0) {
@@ -119,8 +125,8 @@ int main()
 		switch (Menu(CoordSet, eFlag)) { //메뉴 선택
 		case 0: SetCRD(Crd1); continue;
 		case 1: if (CoordSet) { GetCRD(Crd1); } continue;
-		case 2: if (CoordSet) { state = AutoMode(SCKT, Crd1, RobotOrigin); } continue;
-		case 3: if (CoordSet) { state = HoldMode(SCKT, Crd1, RobotOrigin); } continue;
+		case 2: if (CoordSet) { state = AutoMode(SCKT, Crd1, RobotOrigin, 0, false, true); } continue;
+		case 3: if (CoordSet) { state = HoldMode(SCKT, Crd1, RobotOrigin, 0); } continue;
 		case 4: if (eFlag) { state = GrabMode(SCKT, SP, RobotOrigin, GCRD); } continue;
 		case 5: if (eFlag) { state = ThrowMode(SCKT, SP, RobotOrigin, TCRD); } continue;
 		case 6: if (CoordSet == true && eFlag == true) { state = ScenarioMode(SCKT, SP, Crd1, RobotOrigin, GCRD, TCRD); } continue;
@@ -151,7 +157,7 @@ void SendMsg(SOCKET& SCKT, string SendString) {
 }
 bool SerialSend(Serial* SP, string Message) {
 	char sMsg[255] = "";
-	strcpy(sMsg, Message.c_str());
+	strcpy_s(sMsg, Message.c_str());
 	return SP->WriteData(sMsg, 255);
 }
 string SerialRecv(Serial* SP) {
@@ -233,10 +239,9 @@ int Menu(bool isSet, bool eFlag) {
 	cout << "0. 좌표 설정" << endl;
 	if (isSet == true) {
 		cout << "1. 좌표 확인" << endl << "2. 자동 모드" << endl << "3. 대기 모드" << endl;
-		cout << "4. 도구 잡기" << endl << "5. 도구 놓기" << endl << "6. 시나리오 모드" << endl;
 	}
-	if (eFlag == true) {
-		cout << "4. 도구 잡기" << endl << "5. 도구 놓기" << endl;
+	if (isSet == true && eFlag == true) {
+		cout << "4. 도구 잡기" << endl << "5. 도구 놓기" << endl << "6. 시나리오 모드" << endl;
 	}
 	if (isSet == true && eFlag == true) {
 		cout << "6. 시나리오 모드" << endl;
@@ -291,20 +296,26 @@ void GetCRD(CRD& Coord) {
 	}
 	inputClear();
 }
-int AutoMode(SOCKET& SCKT, CRD& Coord, string ROrigin) {
+int AutoMode(SOCKET& SCKT, CRD& Coord, string ROrigin, int Loop, bool LiftFlag, bool ManualSelect) {
 	int Generated = 0;
 	if (Coord.getPointCount() < 1) {
 		cout << "단일 좌표 간격 자동 생성" << endl;
 		Coord.makeInterval();
 		Generated++;
 	}
-	int loop = 0;
-	cout << "루프 횟수 : ";
-	loop = GetInt();
-	string sl;
-	cout << "들어올리기(y/n) : ";
-	cin >> sl;
-	if (sl.compare("y") == 0 || sl.compare("Y") == 0) {
+	if (Loop == 0) {
+		cout << "루프 횟수 : ";
+		Loop = GetInt();
+	}
+	if (ManualSelect == true) {
+		string sl;
+		cout << "들어올리기(y/n) : ";
+		cin >> sl;
+		if (sl.compare("y") == 0 || sl.compare("Y") == 0) {
+			LiftFlag = true;
+		}
+	}
+	if (LiftFlag == true) {
 		Coord.makeLifting();
 		Generated += 2;
 	}
@@ -312,7 +323,7 @@ int AutoMode(SOCKET& SCKT, CRD& Coord, string ROrigin) {
 		cout << Coord.getPointString(i) << endl;
 	}
 	cout << "\r" << "Loop Count : 0";
-	for (int Count = 0; Count < loop; Count++) {
+	for (int Count = 0; Count < Loop; Count++) {
 		for (int i = 0; i <= Coord.getPointCount(); i++) { //i+1개의 자표를 순회함
 			if (Move(SCKT, Coord.getPointString(i)) != 0) { return -1; }
 		}
@@ -324,11 +335,12 @@ int AutoMode(SOCKET& SCKT, CRD& Coord, string ROrigin) {
 	}
 	return 0;
 }
-int HoldMode(SOCKET& SCKT, CRD& Coord, string ROrigin) {
+int HoldMode(SOCKET& SCKT, CRD& Coord, string ROrigin, int HoldTime) {
 	cout << Coord.getPointString(0) << endl;
-	int HoldTime;
-	cout << "대기 시간(ms) : ";
-	cin >> HoldTime;
+	if (HoldTime <= 0) {
+		cout << "대기 시간(ms) : ";
+		cin >> HoldTime;
+	}
 	if (HoldTime < 0) { HoldTime = 0; } //HoldTime이 음수인 경우 0으로 변경
 	if (Move(SCKT, Coord.getPointString(0)) != 0) { return -1; }
 	Sleep(HoldTime);
@@ -336,6 +348,9 @@ int HoldMode(SOCKET& SCKT, CRD& Coord, string ROrigin) {
 	return 0;
 }
 int GrabMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD) {
+	for (int i = 0; i < 3; i++) {
+		Move(SCKT, GCRD.getPointString(i));
+	}
 	string status;
 	if (SerialSend(SP, "1\n")) {
 		status = SerialRecv(SP);
@@ -345,9 +360,15 @@ int GrabMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD) {
 		cout << "엔드이펙터 통신 실패" << endl;
 		return -1;
 	}
+	for (int i = 3; i < 5; i++) {
+		Move(SCKT, GCRD.getPointString(i));
+	}
 	return 0;
 }
-int ThrowMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD) {
+int ThrowMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& TCRD) {
+	for (int i = 0; i < 3; i++) {
+		Move(SCKT, TCRD.getPointString(i));
+	}
 	string status;
 	if (SerialSend(SP, "2\n")) {
 		status = SerialRecv(SP);
@@ -355,13 +376,17 @@ int ThrowMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD) {
 	}
 	else {
 		cout << "엔드이펙터 통신 실패" << endl;
-		return -1;
+		return -1; //시리얼 통신에 실패하면 
+	}
+	for (int i = 3; i < 5; i++) {
+		Move(SCKT, TCRD.getPointString(i));
 	}
 	return 0;
 }
 int ScenarioMode(SOCKET& SCKT, Serial* SP, CRD& Coord, string ROrigin, CRD& GCRD, CRD& TCRD) {
-	SP->WriteData("1\r\n", 255);
-	SP->WriteData("2\r\n", 255);
+	GrabMode(SCKT, SP, ROrigin, GCRD);
+	AutoMode(SCKT, Coord, ROrigin, 5, true);
+	ThrowMode(SCKT, SP, ROrigin, TCRD);
 	return 0;
 }
 void EndTask(SOCKET& SCKT) {
@@ -375,5 +400,5 @@ int getCommand() { //실시간으로 키 입력을 받는 함수
 }
 void inputClear() {
 	cin.clear();
-	cin.ignore(INT_MAX, '\n');
+	cin.ignore(INT_MAX, '\n'); //입력 버퍼 비우기, 원하지 않은 정체를 유발함
 }
