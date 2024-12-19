@@ -402,7 +402,7 @@ int ScenarioMode(SOCKET& SCKT, Serial* SP, CRD& Coord, string ROrigin, CRD& GCRD
 	GrabMode(SCKT, SP, ROrigin, GCRD);
 	AutoMode(SCKT, Coord, ROrigin, 3, true);
 	ThrowMode(SCKT, SP, ROrigin, TCRD);
-	Coord.makeShift(0, 30);
+	Coord.makeShift(0, 30); //도구 변경용 코드
 	HoldMode(SCKT, Coord, ROrigin, 3000);
 	Coord.makeShift(0, -30);
 	GrabMode(SCKT, SP, ROrigin, GCRD);
@@ -428,5 +428,5 @@ int getCommand() { //실시간으로 키 입력을 받는 함수
 }
 void inputClear() {
 	cin.clear();
-	cin.ignore(INT_MAX, '\n'); //입력 버퍼 비우기, 원하지 않은 정체를 유발함
+	cin.ignore(INT_MAX, '\n');
 }
