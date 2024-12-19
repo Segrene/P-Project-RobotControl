@@ -103,12 +103,12 @@ int main()
 
 	CRD GrabCRD;
 	CRD& GCRD = GrabCRD;
-	vector<array<double, 6>> GCD({ {367,6,278,0,180,0}, {450, -100, 278,0,180,0}, {450, -100, 128,0,180,0}, {450, -100, 278,0,180,0},{367,6,278,0,180,0} });
+	vector<array<double, 6>> GCD({ {367,6,278,0,180,0}, {400, -125, 278,0,180,0}, {400, -125, 100,0,180,0}, {400, -125, 278,0,180,0},{367,6,278,0,180,0} });
 	GrabCRD.setVector(GCD);
 
 	CRD ThrowCRD;
 	CRD& TCRD = ThrowCRD;
-	vector<array<double, 6>> TCD({ {367,6,278,0,180,0}, {450, 100, 278,0,180,0}, {450, 100, 128,0,180,0}, {450, 100, 278,0,180,0},{367,6,278,0,180,0} });
+	vector<array<double, 6>> TCD({ {367,6,278,0,180,0}, {400, 125, 278,0,180,0}, {400, 125, 100,0,180,0}, {400, 125, 278,0,180,0},{367,6,278,0,180,0} });
 	ThrowCRD.setVector(TCD);
 
 	while (true) {
@@ -178,7 +178,7 @@ string ZMQRecvMessage(zmq::socket_t& ZMQSocket) {
 	return Received;
 	return string();
 }
-void ZMQSetCoord(CRD& Coord) {
+void ZMQSetCoord(CRD& Coord) { //string으로 좌표 전달받음. 복수의 좌표를 공백으로 구분함
 	zmq::context_t Context{ 1 };
 	zmq::socket_t ZMQSocket(Context, ZMQ_REQ);
 	zmq::socket_t& ZMQSKT = ZMQSocket;
@@ -206,12 +206,12 @@ void ManualSetCoord(CRD& Coord) {
 	string point;
 	cout << "좌표 1 : ";
 	cin >> point;
-	Coord.setOrigin(point);
+	Coord.setOrigin(point); //1번 좌표는 반드시 입력받아야 함
 	int Count = 2;
 	while (true) {
 		cout << "좌표 " << Count << " : ";
 		cin >> point;
-		if (point.compare("end") == 0) {
+		if (point.compare("end") == 0) { //좌표 대신 end 입력시 입력 종료
 			cout << "좌표 입력 종료" << endl;
 			break;
 		}
@@ -237,13 +237,13 @@ int Verify(string String) {
 int Menu(bool isSet, bool eFlag) {
 	cout << "동작 선택" << endl;
 	cout << "0. 좌표 설정" << endl;
-	if (isSet == true) {
+	if (isSet == true) { //좌표가 설정되면 사용 가능한 동작
 		cout << "1. 좌표 확인" << endl << "2. 자동 모드" << endl << "3. 대기 모드" << endl;
 	}
-	if (eFlag == true) {
+	if (eFlag == true) { //엔드이펙터가 연결되면 사용 가능한 동작
 		cout << "4. 도구 잡기" << endl << "5. 도구 놓기" << endl;
 	}
-	if (isSet == true && eFlag == true) {
+	if (isSet == true && eFlag == true) { //좌표와 엔드이펙터가 준비되면 사용가능한 동작
 		cout << "6. 시나리오 모드" << endl;
 	}
 	cout << "7. 종료" << endl << "Select : ";
@@ -272,7 +272,7 @@ void SetCRD(CRD& Coord) {
 	case 1: ManualSetCoord(Coord); break;
 	default: ManualSetCoord(Coord); break;
 	}
-	if (Coord.validation() == -1) {
+	if (Coord.validation() == -1) { //좌표 중 동작 범위를 초과하는 좌표가 존재할 경우
 		cout << "비정상 좌표 확인, 좌표 삭제" << endl;
 		Coord.Clear();
 		while (true) {
@@ -284,7 +284,7 @@ void SetCRD(CRD& Coord) {
 		inputClear();
 	}
 }
-void GetCRD(CRD& Coord) {
+void GetCRD(CRD& Coord) { //설정된 좌표를 표시
 	for (int i = 0; i <= Coord.getPointCount(); i++) {
 		cout << "좌표 " << i + 1 << " : " << Coord.getPointString(i) << endl;
 	}
@@ -298,16 +298,16 @@ void GetCRD(CRD& Coord) {
 }
 int AutoMode(SOCKET& SCKT, CRD& Coord, string ROrigin, int Loop, bool LiftFlag, bool ManualSelect) {
 	int Generated = 0;
-	if (Coord.getPointCount() < 1) {
+	if (Coord.getPointCount() < 1) { //좌표가 하나인 경우
 		cout << "단일 좌표 간격 자동 생성" << endl;
 		Coord.makeInterval();
 		Generated++;
 	}
-	if (Loop == 0) {
+	if (Loop == 0) { //루프 횟수가 설정되지 않은 경우
 		cout << "루프 횟수 : ";
 		Loop = GetInt();
 	}
-	if (ManualSelect == true) {
+	if (ManualSelect == true) { //수동 설정 플래그가 세워진 경우
 		string sl;
 		cout << "들어올리기(y/n) : ";
 		cin >> sl;
@@ -315,29 +315,29 @@ int AutoMode(SOCKET& SCKT, CRD& Coord, string ROrigin, int Loop, bool LiftFlag, 
 			LiftFlag = true;
 		}
 	}
-	if (LiftFlag == true) {
+	if (LiftFlag == true) { //들어올리는 설정인 경우
 		Coord.makeLifting();
 		Generated += 2;
 	}
-	for (int i = 0; i <= Coord.getPointCount(); i++) {
+	for (int i = 0; i <= Coord.getPointCount(); i++) { //설정된 모든 좌표를 표시
 		cout << Coord.getPointString(i) << endl;
 	}
 	cout << "\r" << "Loop Count : 0";
 	for (int Count = 0; Count < Loop; Count++) {
-		for (int i = 0; i <= Coord.getPointCount(); i++) { //i+1개의 자표를 순회함
+		for (int i = 0; i <= Coord.getPointCount(); i++) { //설정된 모든 좌표를 순회
 			if (Move(SCKT, Coord.getPointString(i)) != 0) { return -1; }
 		}
 		cout << "\r" << "Loop Count : " << Count + 1;
 	}
-	if (Move(SCKT, ROrigin) != 0) { return -1; }
+	if (Move(SCKT, ROrigin) != 0) { return -1; } //원점으로 복귀
 	for (int i = 0; i < Generated; i++) {
-		Coord.deletePoint();
+		Coord.deletePoint(); //자동 모드에서 추가된 좌표를 제거
 	}
 	return 0;
 }
 int HoldMode(SOCKET& SCKT, CRD& Coord, string ROrigin, int HoldTime) {
 	cout << Coord.getPointString(0) << endl;
-	if (HoldTime <= 0) {
+	if (HoldTime <= 0) { //대기 시간이 설정되지 않은 경우
 		cout << "대기 시간(ms) : ";
 		cin >> HoldTime;
 	}
@@ -349,10 +349,10 @@ int HoldMode(SOCKET& SCKT, CRD& Coord, string ROrigin, int HoldTime) {
 }
 int GrabMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD) {
 	for (int i = 0; i < 3; i++) {
-		Move(SCKT, GCRD.getPointString(i));
+		Move(SCKT, GCRD.getPointString(i)); //도구 좌표로 이동
 	}
 	string status;
-	if (SerialSend(SP, "1\n")) {
+	if (SerialSend(SP, "1\n")) { //잡기 명령 전달
 		status = SerialRecv(SP);
 		cout << status << endl;
 	}
@@ -360,7 +360,8 @@ int GrabMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD) {
 		cout << "엔드이펙터 통신 실패" << endl;
 		return -1;
 	}
-	for (int i = 3; i < 5; i++) {
+	Sleep(3000);
+	for (int i = 3; i < 5; i++) { //원점으로 복귀
 		Move(SCKT, GCRD.getPointString(i));
 	}
 	return 0;
@@ -370,27 +371,28 @@ int ThrowMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& TCRD) {
 		Move(SCKT, TCRD.getPointString(i));
 	}
 	string status;
-	if (SerialSend(SP, "2\n")) {
+	if (SerialSend(SP, "2\n")) { //놓기 명령 전달
 		status = SerialRecv(SP);
 		cout << status << endl;
 	}
 	else {
 		cout << "엔드이펙터 통신 실패" << endl;
-		return -1; //시리얼 통신에 실패하면 
+		return -1; //시리얼 통신에 실패하면 이상 동작으로 간주
 	}
+	Sleep(3000);
 	for (int i = 3; i < 5; i++) {
 		Move(SCKT, TCRD.getPointString(i));
 	}
 	return 0;
 }
-int ScenarioMode(SOCKET& SCKT, Serial* SP, CRD& Coord, string ROrigin, CRD& GCRD, CRD& TCRD) {
+int ScenarioMode(SOCKET& SCKT, Serial* SP, CRD& Coord, string ROrigin, CRD& GCRD, CRD& TCRD) { //시연용 하드코딩된 시나리오
 	GrabMode(SCKT, SP, ROrigin, GCRD);
 	AutoMode(SCKT, Coord, ROrigin, 5, true);
 	ThrowMode(SCKT, SP, ROrigin, TCRD);
 	return 0;
 }
 void EndTask(SOCKET& SCKT) {
-	SendMsg(SCKT, "end");
+	SendMsg(SCKT, "end"); //종료 명령 전달
 }
 int getCommand() { //실시간으로 키 입력을 받는 함수
 	if (_kbhit()) {
