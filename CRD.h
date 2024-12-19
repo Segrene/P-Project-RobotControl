@@ -35,6 +35,6 @@ public:
 	void Clear();
 	void makeLift();
 	void makeInterval();
-	void makeShift(int axis, int shift);
+	void makeShift(int axis, double shift);
 	int validation();
 };

@@ -34,6 +34,7 @@ int AutoMode(SOCKET& SCKT, CRD& Coord, string ROrigin, int loopCount = 0, bool L
 int HoldMode(SOCKET& SCKT, CRD& Coord, string ROrigin, int HoldTime = 0); //주어진 좌표에서 대기함, 기본적으로 대기시간 수동 설정
 int GrabMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD); //도구를 잡는 함수
 int ThrowMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD); //도구를 버리는 함수
+int EjectMode(Serial* SP);
 int ScenarioMode(SOCKET& SCKT, Serial* SP, CRD& Coord, string ROrigin, CRD& GCRD, CRD& TCRD); //시나리오대로 작동하는 모드, 현제로써는 1개의 시나리오만 가능
 void EndTask(SOCKET& SCKT); //로봇을 종료시키고 프로그램을 종료함
 int getCommand(); //키 입력 감지
@@ -352,7 +353,7 @@ int GrabMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& GCRD) {
 		Move(SCKT, GCRD.getPointString(i)); //도구 좌표로 이동
 	}
 	string status;
-	if (SerialSend(SP, "1\n")) { //잡기 명령 전달
+	if (SerialSend(SP, "1\n\r")) { //잡기 명령 전달
 		status = SerialRecv(SP);
 		cout << status << endl;
 	}
@@ -371,7 +372,7 @@ int ThrowMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& TCRD) {
 		Move(SCKT, TCRD.getPointString(i));
 	}
 	string status;
-	if (SerialSend(SP, "2\n")) { //놓기 명령 전달
+	if (SerialSend(SP, "2\n\r")) { //놓기 명령 전달
 		status = SerialRecv(SP);
 		cout << status << endl;
 	}
@@ -385,19 +386,32 @@ int ThrowMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& TCRD) {
 	}
 	return 0;
 }
+int EjectMode(Serial* SP) {
+	string status;
+	if (SerialSend(SP, "3\n\r")) { //분출 명령 전달
+		status = SerialRecv(SP);
+		cout << status << endl;
+	}
+	else {
+		cout << "엔드이펙터 통신 실패" << endl;
+		return -1; //시리얼 통신에 실패하면 이상 동작으로 간주
+	}
+	return 0;
+}
 int ScenarioMode(SOCKET& SCKT, Serial* SP, CRD& Coord, string ROrigin, CRD& GCRD, CRD& TCRD) { //시연용 하드코딩된 시나리오
 	GrabMode(SCKT, SP, ROrigin, GCRD);
 	AutoMode(SCKT, Coord, ROrigin, 3, true);
 	ThrowMode(SCKT, SP, ROrigin, TCRD);
-	Coord.makeShift(0, 20);
+	Coord.makeShift(0, 30);
 	HoldMode(SCKT, Coord, ROrigin, 3000);
-	Coord.makeShift(0, -20);
+	Coord.makeShift(0, -30);
 	GrabMode(SCKT, SP, ROrigin, GCRD);
 	AutoMode(SCKT, Coord, ROrigin, 2, true);
 	ThrowMode(SCKT, SP, ROrigin, TCRD);
-	Coord.makeShift(0, -20);
+	Coord.makeShift(0, -30);
+	EjectMode(SP);
 	HoldMode(SCKT, Coord, ROrigin, 3000);
-	Coord.makeShift(0, 20);
+	Coord.makeShift(0, 30);
 	GrabMode(SCKT, SP, ROrigin, GCRD);
 	AutoMode(SCKT, Coord, ROrigin, 5, true);
 	ThrowMode(SCKT, SP, ROrigin, TCRD);

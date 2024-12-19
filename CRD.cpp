@@ -131,7 +131,7 @@ void CRD::makeInterval() {
 	this->setOrigin(Inter1);
 	this->addPoint(Inter2);
 }
-void CRD::makeShift(int axis, int shift) {
+void CRD::makeShift(int axis, double shift) {
 	if (Set == false) { cout << "ÁÂÇ¥ ¾øÀ½" << endl; return; }
 	for (int i = 0; i <= Point; i++) {
 		Coord[i][axis] += shift;
