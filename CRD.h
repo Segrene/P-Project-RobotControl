@@ -26,14 +26,15 @@ public:
 	void setOrigin(array<double, 6> coord);
 	void addPoint(array<double, 6> coord);
 	void setVector(vector<array<double, 6>> coord);
-	void editPoint(int pointNum, int coordNum, double coord);
+	void editPoint(int pointNum, int axis, double coord);
 	int deletePoint();
 	string getPointString(int point);
 	void getPoint(int point, double* coord);
 	int getPointCount();
 	bool isSet();
 	void Clear();
-	void makeLifting();
+	void makeLift();
 	void makeInterval();
+	void makeShift(int axis, int shift);
 	int validation();
 };

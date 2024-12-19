@@ -73,9 +73,9 @@ void CRD::setVector(vector<array<double, 6>> coord) {
 	Coord = coord;
 	Point = coord.size() - 1;
 }
-void CRD::editPoint(int pointNum, int coordNum, double coord) {
+void CRD::editPoint(int pointNum, int axis, double coord) {
 	if (pointNum > Point) { throw out_of_range("vector 범위 초과"); }
-	Coord[pointNum][coordNum] = coord;
+	Coord[pointNum][axis] = coord;
 }
 int CRD::deletePoint() {
 	if (Point < 1) { return -1; }
@@ -112,7 +112,7 @@ void CRD::Clear() {
 	Point = 0;
 	Set = false;
 }
-void CRD::makeLifting() {
+void CRD::makeLift() {
 	if (Point < 1) { cout << "좌표수 부족" << endl; return; }
 	array<double, 6> lift1 = Coord[Point];
 	array<double, 6> lift2 = Coord[0];
@@ -131,8 +131,14 @@ void CRD::makeInterval() {
 	this->setOrigin(Inter1);
 	this->addPoint(Inter2);
 }
+void CRD::makeShift(int axis, int shift) {
+	if (Set == false) { cout << "좌표 없음" << endl; return; }
+	for (int i = 0; i <= Point; i++) {
+		Coord[i][axis] += shift;
+	}
+}
 int CRD::validation() {
-	if (this->isSet() == false) {
+	if (Set == false) {
 		cout << "좌표 없음" << endl;
 		return 1;
 	}

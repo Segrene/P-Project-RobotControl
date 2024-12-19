@@ -316,7 +316,7 @@ int AutoMode(SOCKET& SCKT, CRD& Coord, string ROrigin, int Loop, bool LiftFlag, 
 		}
 	}
 	if (LiftFlag == true) { //들어올리는 설정인 경우
-		Coord.makeLifting();
+		Coord.makeLift();
 		Generated += 2;
 	}
 	for (int i = 0; i <= Coord.getPointCount(); i++) { //설정된 모든 좌표를 표시
@@ -386,6 +386,18 @@ int ThrowMode(SOCKET& SCKT, Serial* SP, string ROrigin, CRD& TCRD) {
 	return 0;
 }
 int ScenarioMode(SOCKET& SCKT, Serial* SP, CRD& Coord, string ROrigin, CRD& GCRD, CRD& TCRD) { //시연용 하드코딩된 시나리오
+	GrabMode(SCKT, SP, ROrigin, GCRD);
+	AutoMode(SCKT, Coord, ROrigin, 3, true);
+	ThrowMode(SCKT, SP, ROrigin, TCRD);
+	Coord.makeShift(0, 20);
+	HoldMode(SCKT, Coord, ROrigin, 3000);
+	Coord.makeShift(0, -20);
+	GrabMode(SCKT, SP, ROrigin, GCRD);
+	AutoMode(SCKT, Coord, ROrigin, 2, true);
+	ThrowMode(SCKT, SP, ROrigin, TCRD);
+	Coord.makeShift(0, -20);
+	HoldMode(SCKT, Coord, ROrigin, 3000);
+	Coord.makeShift(0, 20);
 	GrabMode(SCKT, SP, ROrigin, GCRD);
 	AutoMode(SCKT, Coord, ROrigin, 5, true);
 	ThrowMode(SCKT, SP, ROrigin, TCRD);
